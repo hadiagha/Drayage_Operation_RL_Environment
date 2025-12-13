@@ -90,7 +90,7 @@ class DrayageEnv(gym.Env):
     Reward: Multi-objective function balancing deficit levels and delays
     """
     
-    metadata = {'render_modes': ['human']}
+    metadata = {'render_modes': ['human', 'rgb_array']}
     
     def __init__(
         self,
@@ -108,6 +108,7 @@ class DrayageEnv(gym.Env):
         delay_cost_per_step: float = 70.0,
         forbidden_action_penalty: float = 30.0,
         laplace_scale: float = 1.0,
+        terminate_on_forbidden: bool = True,
         seed: Optional[int] = None
     ):
         super().__init__()
@@ -122,6 +123,7 @@ class DrayageEnv(gym.Env):
         self.delay_cost_per_step = delay_cost_per_step
         self.forbidden_penalty = forbidden_action_penalty
         self.laplace_scale = laplace_scale
+        self.terminate_on_forbidden = terminate_on_forbidden
         
         # Time management
         self.time_steps = self._build_time_steps()
@@ -261,7 +263,7 @@ class DrayageEnv(gym.Env):
         self.current_step += 1
         
         # Check termination
-        terminated = self.current_step >= len(self.time_steps) or forbidden
+        terminated = self.current_step >= len(self.time_steps) or (forbidden and self.terminate_on_forbidden)
         truncated = False
         
         state = self._get_state()
@@ -520,9 +522,34 @@ class DrayageEnv(gym.Env):
         }
     
     def render(self, mode='human'):
-        """Optional rendering for debugging"""
+        """
+        Render the environment.
+        
+        Args:
+            mode: 'human' for visual display, 'rgb_array' for image array
+            
+        Returns:
+            RGB array if mode='rgb_array', None otherwise
+        """
         if mode == 'human':
+            if not hasattr(self, '_renderer') or self._renderer is None:
+                from drayage_renderer import DrayageRenderer
+                self._renderer = DrayageRenderer(self)
+            return self._renderer.render(mode='human')
+        elif mode == 'rgb_array':
+            if not hasattr(self, '_renderer') or self._renderer is None:
+                from drayage_renderer import DrayageRenderer
+                self._renderer = DrayageRenderer(self)
+            return self._renderer.render(mode='rgb_array')
+        else:
             print(f"\n=== Time Step {self.current_step}/{len(self.time_steps)} ===")
             for yard_id in range(self.num_yards):
                 deficit = self._calculate_n_step_deficit(yard_id)
                 print(f"Yard {yard_id}: Deficit={deficit}")
+            return None
+    
+    def close(self):
+        """Clean up resources"""
+        if hasattr(self, '_renderer') and self._renderer is not None:
+            self._renderer.close()
+            self._renderer = None

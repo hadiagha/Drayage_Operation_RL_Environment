@@ -2,7 +2,11 @@
 
 A Gymnasium-compatible reinforcement learning environment for optimizing empty trailer repositioning in drayage operations.
 
-![image](Envirnoment_Dray_Q.png)
+## Demo
+
+![Drayage Environment Demo](drayage_demo.gif)
+
+*Real-time visualization showing trailer movements, yard states, and order processing over a simulated operational day.*
 
 ## Overview
 
@@ -14,6 +18,8 @@ This is the official implementation of the environment described in:
 > Hadi Aghazadeh, Yunli Wang, Sun Sun, Xin Wang  
 > *Transportation Research Part C: Emerging Technologies*, Volume 163, 2024  
 > [https://doi.org/10.1016/j.trc.2024.104641](https://doi.org/10.1016/j.trc.2024.104641)
+
+![Environment Diagram](Envirnoment_Dray_Q.png)
 
 ### Key Features
 
@@ -282,9 +288,52 @@ Where:
 |-----------|------|---------|-------------|
 | `seed` | int | None | Random seed for reproducibility |
 
-## Training with Popular RL Libraries
+## Training with DQN
 
-### Stable-Baselines3
+A complete DQN training script is included in `train_dqn.py`.
+
+### Quick Start
+
+```bash
+# Train with default settings (100k steps)
+python train_dqn.py
+
+# Train for more steps
+python train_dqn.py --timesteps 500000
+
+# Evaluate a trained model
+python train_dqn.py --eval --model models/dqn_drayage_*/final_model
+
+# Compare DQN with baselines (random, greedy)
+python train_dqn.py --compare --model models/dqn_drayage_*/final_model
+```
+
+### Training Options
+
+```bash
+python train_dqn.py --help
+
+Options:
+  --timesteps INT      Total training timesteps (default: 100000)
+  --lr FLOAT           Learning rate (default: 1e-4)
+  --buffer-size INT    Replay buffer size (default: 50000)
+  --batch-size INT     Batch size (default: 64)
+  --gamma FLOAT        Discount factor (default: 0.99)
+  --seed INT           Random seed (default: 42)
+  --save-path PATH     Model save directory (default: models)
+  --log-path PATH      Tensorboard log directory (default: logs)
+```
+
+### Monitoring Training
+
+```bash
+# View training progress in TensorBoard
+tensorboard --logdir logs
+```
+
+## Training with Other RL Libraries
+
+### Stable-Baselines3 (PPO)
 
 ```python
 from stable_baselines3 import PPO, DQN, A2C
@@ -591,6 +640,75 @@ while True:
 print(f"Greedy policy reward: {total_reward}")
 ```
 
+## Visualization
+
+The environment includes a comprehensive real-time visualization system for debugging, demonstration, and analysis.
+
+### Rendering Modes
+
+```python
+# Human mode - displays interactive matplotlib window
+env.render(mode='human')
+
+# RGB array mode - returns numpy array for recording
+frame = env.render(mode='rgb_array')
+```
+
+### Using the Renderer
+
+```python
+from drayage_renderer import DrayageRenderer, create_demo_gif
+
+# Create custom renderer with options
+renderer = DrayageRenderer(
+    env,
+    figsize=(14, 10),      # Figure size
+    yard_radius=0.12,      # Yard circle size
+    trailer_size=0.03,     # Trailer marker size
+    show_routes=True,      # Show travel routes between yards
+    show_metrics=True,     # Show performance metrics panel
+    dark_mode=False        # Use dark color scheme
+)
+
+# Render current state
+renderer.render(mode='human')
+
+# Record frames for GIF
+renderer.start_recording()
+# ... run episode ...
+frames = renderer.stop_recording()
+```
+
+### Creating Demo GIFs
+
+```python
+from drayage_renderer import create_demo_gif
+
+# Create a demonstration GIF
+create_demo_gif(
+    env,
+    output_path='my_demo.gif',
+    num_steps=50,          # Number of steps to record
+    fps=4,                 # Frames per second
+    policy=my_policy       # Optional policy function
+)
+```
+
+Or use the included script:
+
+```bash
+python create_demo_gif.py
+```
+
+### Visualization Features
+
+- **Yard Display**: Circular nodes showing deficit levels, empty trailer counts, and importance bars
+- **Trailer Tracking**: Color-coded trailers by status (empty, loading, moving, etc.)
+- **Movement Animation**: Arrows showing trailer movements between yards
+- **Metrics Panel**: Real-time statistics including orders delivered, delayed, and in progress
+- **Timeline**: Progress bar showing current time within the operational day
+- **Legend**: Color key for trailer statuses
+
 ## Contributing
 
 Contributions are welcome! Areas for improvement:
@@ -598,7 +716,6 @@ Contributions are welcome! Areas for improvement:
 - **Additional constraints**: Driver hours, fuel costs, trailer maintenance schedules
 - **Multi-day episodes**: Rolling horizon planning
 - **Stochastic arrivals**: Dynamic order generation during episodes
-- **Visualization tools**: Real-time rendering of trailer movements and yard states
 - **Benchmark scenarios**: Standardized test cases for fair comparison
 - **Performance optimizations**: Faster state computation for large-scale problems
 
