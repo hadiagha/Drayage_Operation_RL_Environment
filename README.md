@@ -654,7 +654,7 @@ env.render(mode='human')
 frame = env.render(mode='rgb_array')
 ```
 
-### Using the Renderer
+ 
 
 ```python
 from drayage_renderer import DrayageRenderer, create_demo_gif
@@ -677,27 +677,6 @@ renderer.render(mode='human')
 renderer.start_recording()
 # ... run episode ...
 frames = renderer.stop_recording()
-```
-
-### Creating Demo GIFs
-
-```python
-from drayage_renderer import create_demo_gif
-
-# Create a demonstration GIF
-create_demo_gif(
-    env,
-    output_path='my_demo.gif',
-    num_steps=50,          # Number of steps to record
-    fps=4,                 # Frames per second
-    policy=my_policy       # Optional policy function
-)
-```
-
-Or use the included script:
-
-```bash
-python create_demo_gif.py
 ```
 
 ### Visualization Features
